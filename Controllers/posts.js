@@ -3,6 +3,9 @@ const router = express.Router();
 import request from 'request';
 import groupByTime from 'group-by-time';
 
+//https://history.openweathermap.org/data/2.5/history/city?q=denver&type=hour&start=1628551069&end=1659662169&appid=d0ba89606ab2f8b5794954dcf359df5d
+
+
 function groupday(value, index, array){
    let byday={};
     let d = new Date(value['dt'] * 1000);
@@ -15,8 +18,11 @@ function groupday(value, index, array){
 // you shall also round off the value of the degrees fahrenheit calculated into two decimal places
 function roundToTwo(num) {
   return +(Math.round(num + "e+0") + "e-0");
-}
-
+};
+function getCardinalDirection(angle) {
+  const directions = ['↑ N', '↗ NE', '→ E', '↘ SE', '↓ S', '↙ SW', '← W', '↖ NW'];
+  return directions[Math.round(angle / 45) % 8];
+};
 export const citySearch = async (req, res) => {
 
     // Get city name passed in the form
@@ -45,11 +51,20 @@ export const citySearch = async (req, res) => {
               //  res.render('index', { weather: null, error: 'Error, please try again' });
             } else {
                 // we shall use the data got to set up your output
+                const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+
+                var time = new Date();
+
                 let place = `${weather.name}, ${weather.sys.country}`,
-                  /* you shall calculate the current timezone using the data fetched*/
                   weatherTimezone = `${new Date(
                     weather.dt * 1000 - weather.timezone * 1000
                   )}`;
+                let testday =new Date(weather.dt);
+
+                let currdate = weatherTimezone.slice(4,15);
+                var dayName = days[testday.getDay()];
+                console.log(currdate);
                 let weatherTemp = `${weather.main.temp}`,
                   weatherPressure = `${weather.main.pressure}`,
                   /* you will fetch the weather icon and its size using the icon data*/
@@ -61,6 +76,12 @@ export const citySearch = async (req, res) => {
                   main = `${weather.weather[0].main}`,
                   weatherFahrenheit;
                 weatherFahrenheit = (weatherTemp * 9) / 5 + 32;
+                var weatherDescription1 = weatherDescription.split(' ');
+                weatherDescription1 = weatherDescription1.map((word)=> word[0].toUpperCase()+word.slice(1,word.length));
+                console.log(weatherDescription1);
+                weatherDescription = weatherDescription1[0]+' '+weatherDescription1[1];
+                let direction = getCardinalDirection(weather.wind.deg);
+                let windSpeed = `${weather.wind.speed} m/s ${direction}`;
 
                 weatherFahrenheit = roundToTwo(weatherFahrenheit);
                 // you shall now render the data to your page (index.ejs) before displaying it out
@@ -71,10 +92,13 @@ export const citySearch = async (req, res) => {
                   pressure: weatherPressure,
                   icon: weatherIcon,
                   description: weatherDescription,
-                  timezone: weatherTimezone,
+                  time: time.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }),
+                  date: currdate,
+                  day: dayName,
                   humidity: humidity,
                   fahrenheit: weatherFahrenheit,
                   clouds: clouds,
+                  windSpeed:windSpeed,
                   visibility: visibility,
                   main: main,
                   error: null,
