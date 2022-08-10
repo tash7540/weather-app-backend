@@ -14,4 +14,8 @@ const getCardinalDirection = (angle) =>{
   const directions = ['↑ N', '↗ NE', '→ E', '↘ SE', '↓ S', '↙ SW', '← W', '↖ NW'];
   return directions[Math.round(angle / 45) % 8];
 };
-export {getCardinalDirection,roundToTwo,groupday};
+const toFehrenhiet = (temp)=>{
+  return ((temp * 9) / 5 + 32);
+
+}
+export {getCardinalDirection,roundToTwo,groupday,toFehrenhiet};

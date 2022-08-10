@@ -2,7 +2,7 @@ import express from 'express';
 const router = express.Router();
 import request from 'request';
 import groupByTime from 'group-by-time';
-import {groupday,getCardinalDirection,roundToTwo} from './Utils.js';
+import {groupday,getCardinalDirection,roundToTwo,toFehrenhiet} from './Utils.js';
 
 export const citySearch = async (req, res) => {
 
@@ -28,12 +28,12 @@ export const citySearch = async (req, res) => {
                 // we shall use the data got to set up your output
                 const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
                 let place = `${weather.name}, ${weather.sys.country}`,
-                  weatherTimezone = `${new Date(
+                  timeString = `${new Date(
                     weather.dt * 1000 - weather.timezone * 1000
                   )}`;
-                let time =new Date(weather.dt*1000);
 
-                let currdate = weatherTimezone.slice(4,15);
+                let time =new Date(weather.dt*1000);
+                let currdate = timeString.slice(4,15);
                 var dayName = days[time.getDay()];
                 let weatherTemp = `${roundToTwo(weather.main.temp)}`,
                   weatherPressure = `${weather.main.pressure}`,
@@ -46,9 +46,9 @@ export const citySearch = async (req, res) => {
                   main = `${weather.weather[0].main}`,
                   weatherFahrenheit;
                 weatherFahrenheit = roundToTwo((weatherTemp * 9) / 5 + 32);
-                var weatherDescription1 = weatherDescription.split(' ');
-                weatherDescription1 = weatherDescription1.map((word)=> word[0].toUpperCase()+word.slice(1,word.length));
-                weatherDescription = weatherDescription1[0]+' '+weatherDescription1[1];
+                var weatherDescriptionSplit = weatherDescription.split(' ');
+                weatherDescriptionSplit= weatherDescriptionSplit.map((word)=> word[0].toUpperCase()+word.slice(1,word.length));
+                weatherDescription = weatherDescriptionSplit[0]+' '+weatherDescriptionSplit[1];
                 let direction = getCardinalDirection(weather.wind.deg);
                 let windSpeed = `${weather.wind.speed} m/s ${direction}`;
 
@@ -79,8 +79,6 @@ export const citySearchForecast = async (req, res) => {
 
     // Get city name passed in the form
     let city = req.body.city;
-    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-
     // Use that city name to fetch data
     // Use the API_KEY in the '.env' file
     let url = `http://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${process.env.API_KEY}`;
@@ -94,7 +92,7 @@ export const citySearchForecast = async (req, res) => {
 
         } else {
             var weather = JSON.parse(body);
-
+            const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
             let weather_grouped = (weather['list']).map(groupday);
             var data_temps = {};
             var data_icons = {};
@@ -121,11 +119,13 @@ export const citySearchForecast = async (req, res) => {
                 summ = summ+data_temps[i][j];
               }
               var temp = summ /data_temps[i].length;
-              var obj = {"temp":roundToTwo(temp),
+              var obj = {"tempC":roundToTwo(temp),
+              "tempF":roundToTwo(toFehrenhiet(temp)),
               "day":data_days[i],
               "icon":data_icons[i]};
               data.push(obj);
             }
+            console.log(data);
             res.json(data);
 
             }
