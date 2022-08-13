@@ -132,4 +132,25 @@ export const citySearchForecast = async (req, res) => {
         })
 
 };
+export const citySearchHistorical = async (req,res) => {
+  var currentTime = new Date();
+  let end = currentTime.getTime() - (86400000);
+  currentTime.setFullYear(currentTime.getFullYear() - 1);
+  let start = currentTime.getTime();
+  let city = req.body.city;
+
+  let url = `https://history.openweathermap.org/data/2.5/history/city?q=${city}&type=hour&start=${start}&end=${end}&appid=${process.env.API_KEY}`;
+  console.log(url);
+  request(url, function(err, response, body) {
+
+      // On return, check the sjson data fetched
+      if (err) {
+          res.json({ error: err })
+
+      } else {
+          var weather = JSON.parse(body);
+          console.log(weather);
+      }
+    });
+};
 export default router;
