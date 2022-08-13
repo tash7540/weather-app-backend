@@ -134,11 +134,10 @@ export const citySearchForecast = async (req, res) => {
 };
 export const citySearchHistorical = async (req,res) => {
   var currentTime = new Date();
-  let end = currentTime.getTime() - (86400000);
-  currentTime.setFullYear(currentTime.getFullYear() - 1);
-  let start = currentTime.getTime();
+  let end = Math.floor(currentTime.getTime()/1000);
+  //search 1 week back
+  let start = Math.floor((currentTime.getTime()/1000) - (7*86400));
   let city = req.body.city;
-
   let url = `https://history.openweathermap.org/data/2.5/history/city?q=${city}&type=hour&start=${start}&end=${end}&appid=${process.env.API_KEY}`;
   console.log(url);
   request(url, function(err, response, body) {
@@ -150,6 +149,7 @@ export const citySearchHistorical = async (req,res) => {
       } else {
           var weather = JSON.parse(body);
           console.log(weather);
+          res.json({weather})
       }
     });
 };

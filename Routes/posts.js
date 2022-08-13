@@ -5,5 +5,5 @@ const router = express.Router();
 
 router.post('/currentWeather', citySearch);
 router.post('/forecastWeather', citySearchForecast);
-router.get('/HistoricalWeather', citySearchHistorical);
+router.post('/HistoricalWeather', citySearchHistorical);
 export default router;
