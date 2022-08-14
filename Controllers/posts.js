@@ -32,7 +32,7 @@ export const citySearch = async (req, res) => {
                     weather.dt * 1000 - weather.timezone * 1000
                   )}`;
 
-                let time =new Date(weather.dt*1000);
+                let time =new Date(weather.dt*1000 -weather.timezone*1000);
                 let currdate = timeString.slice(4,15);
                 var dayName = days[time.getDay()];
                 let weatherTemp = `${roundToTwo(weather.main.temp)}`,
@@ -49,8 +49,8 @@ export const citySearch = async (req, res) => {
                 var weatherDescriptionSplit = weatherDescription.split(' ');
                 weatherDescriptionSplit= weatherDescriptionSplit.map((word)=> word[0].toUpperCase()+word.slice(1,word.length));
                 weatherDescription = weatherDescriptionSplit[0]+' '+weatherDescriptionSplit[1];
-                let direction = getCardinalDirection(weather.wind.deg);
-                let windSpeed = `${weather.wind.speed} m/s ${direction}`;
+                let direction = `${getCardinalDirection(weather.wind.deg)}`;
+                let windSpeed = `${weather.wind.speed} m/s`;
 
                 res.json({
                   weather: weather,
@@ -66,6 +66,7 @@ export const citySearch = async (req, res) => {
                   fahrenheit: weatherFahrenheit,
                   clouds: clouds,
                   windSpeed:windSpeed,
+                  windDirection:direction,
                   visibility: visibility,
                   main: main,
                   error: null,
@@ -149,7 +150,14 @@ export const citySearchHistorical = async (req,res) => {
       } else {
           var weather = JSON.parse(body);
           console.log(weather);
-          res.json({weather})
+          let weatherData = [];
+          weather.list.map((data)=>{
+            let stamp =new Date(data.dt * 1000);
+            weatherData.push({time:stamp,temp:data.main.temp});
+          });
+          console.log(weatherData);
+          res.json({weatherData});
+
       }
     });
 };
