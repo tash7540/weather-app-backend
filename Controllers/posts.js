@@ -153,7 +153,7 @@ export const citySearchHistorical = async (req,res) => {
           let weatherData = [];
           weather.list.map((data)=>{
             let stamp =new Date(data.dt * 1000);
-            weatherData.push({x:stamp,y:roundToTwo((data.main.temp * 9) / 5 + 32)});
+            weatherData.push({x:stamp,y:roundToTwo((data.main.temp -273.15)* 9) / 5 + 32)});
           });
           console.log(weatherData);
           res.json({weatherData});
