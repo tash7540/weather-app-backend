@@ -18,11 +18,11 @@ export const citySearch = async (req, res) => {
         if (err) {
             res.json({ error: err })
 
-        } else {
+        } else{
             let weather = JSON.parse(body);
             // you shall output it in the console just to make sure that the data being displayed is what you want
-            if (weather.main == undefined) {
-                res.json({ error: err })
+            if (weather.cod != '200') {
+                res.status(400).json({error:err})
 
             } else {
                 // we shall use the data got to set up your output
@@ -52,7 +52,7 @@ export const citySearch = async (req, res) => {
                 let direction = `${getCardinalDirection(weather.wind.deg)}`;
                 let windSpeed = `${weather.wind.speed} m/s`;
 
-                res.json({
+                res.status(200).json({
                   weather: weather,
                   place: place,
                   temp: weatherTemp,
@@ -93,71 +93,117 @@ export const citySearchForecast = async (req, res) => {
 
         } else {
             var weather = JSON.parse(body);
+            if (weather.cod !='200') {
+                res.status(400).json({ error: err });
+
+            }
+            else{
+              const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+              let weather_grouped = (weather['list']).map(groupday);
+              var data_temps = {};
+              var data_icons = {};
+              var data_days = {};
+              for(var i in weather_grouped){
+                data_temps[Object.keys(weather_grouped[i])[0]] = [];
+                data_icons[Object.keys(weather_grouped[i])[0]] = "";
+                data_days[Object.keys(weather_grouped[i])[0]] = "";
+
+              }
+              for(var i in weather_grouped){
+                var a = Object.keys(weather_grouped[i])[0];
+                data_temps[Object.keys(weather_grouped[i])[0]].push(weather_grouped[i][a][0]['main']['temp_max']);
+                data_icons[Object.keys(weather_grouped[i])[0]] = weather_grouped[i][a][0]['weather'][0]['icon'];
+                var testday =new Date(weather_grouped[i][a][0]['dt'] * 1000);
+                data_days[Object.keys(weather_grouped[i])[0]] =days[testday.getDay()];
+
+              }
+
+              const data = [];
+              for(const i in data_temps){
+                var summ = 0;
+                for(var j in data_temps[i]){
+                  summ = summ+data_temps[i][j];
+                }
+                var temp = summ /data_temps[i].length;
+                var obj = {"tempC":roundToTwo(temp),
+                "tempF":roundToTwo(toFehrenhiet(temp)),
+                "day":data_days[i],
+                "icon":data_icons[i]};
+                data.push(obj);
+              }
+              res.status(200).json(data);
+
+              }
+            }
+        });
+
+};
+export const citySearchHistorical = async (req,res) => {
+
+  var currentTime = new Date();
+  let end = Math.floor(currentTime.getTime()/1000);
+  //search 1 week back
+  let start = Math.floor((currentTime.getTime()/1000) - (7*86400));
+  let city = req.body.city;
+
+  let url = `https://history.openweathermap.org/data/2.5/history/city?q=${city}&type=hour&start=${start}&end=${end}&appid=${process.env.API_KEY}`;
+  console.log(url);
+  request(url, function(err, response, body) {
+
+      // On return, check the sjson data fetched
+      var weather = JSON.parse(body);
+      if (err) {
+          res.status(400).json({ error: err })
+
+      } else {
+
+          if (weather.code == 404000) {
+              res.status(400).json({ error: err })
+
+          }
+          else{
+            console.log(weather);
+            //
             const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
             let weather_grouped = (weather['list']).map(groupday);
             var data_temps = {};
-            var data_icons = {};
             var data_days = {};
             for(var i in weather_grouped){
               data_temps[Object.keys(weather_grouped[i])[0]] = [];
-              data_icons[Object.keys(weather_grouped[i])[0]] = "";
               data_days[Object.keys(weather_grouped[i])[0]] = "";
 
             }
             for(var i in weather_grouped){
               var a = Object.keys(weather_grouped[i])[0];
               data_temps[Object.keys(weather_grouped[i])[0]].push(weather_grouped[i][a][0]['main']['temp_max']);
-              data_icons[Object.keys(weather_grouped[i])[0]] = weather_grouped[i][a][0]['weather'][0]['icon'];
               var testday =new Date(weather_grouped[i][a][0]['dt'] * 1000);
-              data_days[Object.keys(weather_grouped[i])[0]] =days[testday.getDay()];
+              let day = testday.getDate();
+              let month = testday.getMonth() + 1;
+              let year = testday.getFullYear();
+              let currentDate = `${month}-${day}-${year}`;
+              data_days[Object.keys(weather_grouped[i])[0]] =currentDate;//days[testday.getDay()];
 
             }
 
-            const data = [];
+            let data = [];
             for(const i in data_temps){
               var summ = 0;
               for(var j in data_temps[i]){
                 summ = summ+data_temps[i][j];
               }
               var temp = summ /data_temps[i].length;
-              var obj = {"tempC":roundToTwo(temp),
-              "tempF":roundToTwo(toFehrenhiet(temp)),
-              "day":data_days[i],
-              "icon":data_icons[i]};
+              var obj = {
+              "x":data_days[i],
+              "y":roundToTwo(((temp -273.15)* 9) / 5 + 32)}
               data.push(obj);
             }
+
+            data = data.slice(1,data.length-1);
+
             console.log(data);
-            res.json(data);
+            res.status(200).json(data);
 
-            }
-        })
-
-};
-export const citySearchHistorical = async (req,res) => {
-  var currentTime = new Date();
-  let end = Math.floor(currentTime.getTime()/1000);
-  //search 1 week back
-  let start = Math.floor((currentTime.getTime()/1000) - (7*86400));
-  let city = req.body.city;
-  let url = `https://history.openweathermap.org/data/2.5/history/city?q=${city}&type=hour&start=${start}&end=${end}&appid=${process.env.API_KEY}`;
-  console.log(url);
-  request(url, function(err, response, body) {
-
-      // On return, check the sjson data fetched
-      if (err) {
-          res.json({ error: err })
-
-      } else {
-          var weather = JSON.parse(body);
-          console.log(weather);
-          let weatherData = [];
-          weather.list.map((data)=>{
-            let stamp =new Date(data.dt * 1000);
-            weatherData.push({x:stamp,y:roundToTwo(((data.main.temp -273.15)* 9) / 5 + 32)});
-          });
-          console.log(weatherData);
-          res.json({weatherData});
-
+        }
       }
     });
 };
